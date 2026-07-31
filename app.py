@@ -468,6 +468,18 @@ with gr.Blocks(
                     gr.Markdown("### 🛰️ 4. 地球物理資料全覽 (Geophysical Data: GNSS / 地下水 / 地磁)")
                     geophy_table = gr.DataFrame(label="地球物理資料狀態", interactive=False, wrap=True)
 
+            # outputs 順序與 return 的 11 個變數完全一致：
+            # 1. card_html -> quick_card
+            # 2. df_catalog -> quick_table
+            # 3. info_str -> quick_info
+            # 4. tmp_path -> quick_file
+            # 5. map_html -> map_output
+            # 6. df_stations -> stations_table
+            # 7. df_geophy -> geophy_table
+            # 8. fig_wave -> wave_plot
+            # 9. plot_3d_hypo_fig -> plot_3d_hypo
+            # 10. plot_3d_geophy_fig -> plot_3d_geophy
+            # 11. wave_3d_plot_fig -> wave_3d_plot
             event_dropdown.change(
                 quick_select_event,
                 inputs=[event_dropdown],
