@@ -301,8 +301,6 @@ PORT = int(os.environ.get("PORT", 7860))
 demo.launch(
     server_name="0.0.0.0",
     server_port=PORT,
-    share=False,
-    show_error=True,
     auth=[(APP_USER, APP_PASS)],
     auth_message="GDMS Taiwan — 請輸入帳號密碼",
 )
