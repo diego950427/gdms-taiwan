@@ -247,14 +247,74 @@ def generate_3d_geophy_plot(eq_lat, eq_lon):
     )
     return fig
 
-def generate_waveform_df():
+def generate_interactive_waveform_plot(component="全三軸 (XYZ) 疊加"):
+    """使用 Plotly 產生極高質感的地震波形 X (東西 E-W), Y (南北 N-S), Z (垂直 Vert) 三軸互動圖表與切換"""
     t = np.linspace(0, 60, 600)
-    p_arrival, s_arrival = 10, 22
-    y_p = np.where(t > p_arrival, np.sin(2 * np.pi * 3 * (t - p_arrival)) * np.exp(-0.1 * (t - p_arrival)), 0)
-    y_s = np.where(t > s_arrival, 2.5 * np.sin(2 * np.pi * 1.5 * (t - s_arrival)) * np.exp(-0.05 * (t - s_arrival)), 0)
-    noise = np.random.normal(0, 0.05, 600)
-    amplitude = y_p + y_s + noise
-    return pd.DataFrame({"時間(秒)": t, "垂直動振幅": amplitude})
+    p_arrival, s_arrival = 8, 18
+    
+    # 垂直 Z 分量 (高頻 P 波主導)
+    z_p = np.where(t > p_arrival, np.sin(2 * np.pi * 3.5 * (t - p_arrival)) * np.exp(-0.12 * (t - p_arrival)), 0)
+    z_s = np.where(t > s_arrival, 1.8 * np.sin(2 * np.pi * 1.5 * (t - s_arrival)) * np.exp(-0.06 * (t - s_arrival)), 0)
+    z_wave = z_p + z_s + np.random.normal(0, 0.04, 600)
+    
+    # 東西 X 分量 (S 波與表面波為主)
+    x_s = np.where(t > s_arrival + 0.5, 3.2 * np.cos(2 * np.pi * 1.2 * (t - s_arrival)) * np.exp(-0.04 * (t - s_arrival)), 0)
+    x_wave = x_s + np.random.normal(0, 0.04, 600)
+
+    # 南北 Y 分量
+    y_s = np.where(t > s_arrival + 0.2, 2.8 * np.sin(2 * np.pi * 1.1 * (t - s_arrival)) * np.exp(-0.05 * (t - s_arrival)), 0)
+    y_wave = y_s + np.random.normal(0, 0.04, 600)
+
+    fig = go.Figure()
+
+    if component in ["X 軸 (東西向 E-W)", "全三軸 (XYZ) 疊加"]:
+        fig.add_trace(go.Scatter(x=t, y=x_wave, mode='lines', name='X 軸 (東西 E-W)', line=dict(color='#38bdf8', width=1.5)))
+    if component in ["Y 軸 (南北向 N-S)", "全三軸 (XYZ) 疊加"]:
+        fig.add_trace(go.Scatter(x=t, y=y_wave, mode='lines', name='Y 軸 (南北 N-S)', line=dict(color='#f59e0b', width=1.5)))
+    if component in ["Z 軸 (垂直向 Vert)", "全三軸 (XYZ) 疊加"]:
+        fig.add_trace(go.Scatter(x=t, y=z_wave, mode='lines', name='Z 軸 (垂直 Vert)', line=dict(color='#10b981', width=1.5)))
+
+    fig.update_layout(
+        template="plotly_dark",
+        title=f"🌊 近震央觀測站 (NACB) 三軸波形動態解析訊號圖表 [{component}]",
+        xaxis_title="時間 (t / 秒)",
+        yaxis_title="加速度 / 振幅 (gal)",
+        hovermode="x unified",
+        margin=dict(l=40, r=20, b=40, t=50),
+        height=320,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    return fig
+
+def generate_3d_waveform_trajectory():
+    """繪製 3D 地球波形粒子運動軌跡 (Phase Space Trajectory X-Y-Z)"""
+    t = np.linspace(0, 40, 400)
+    p_arrival, s_arrival = 8, 18
+    z_wave = np.where(t > p_arrival, np.sin(2 * np.pi * 3 * (t - p_arrival)) * np.exp(-0.1 * (t - p_arrival)), 0) + np.where(t > s_arrival, 2 * np.sin(2 * np.pi * 1.5 * (t - s_arrival)) * np.exp(-0.05 * (t - s_arrival)), 0)
+    x_wave = np.where(t > s_arrival, 3 * np.cos(2 * np.pi * 1.2 * (t - s_arrival)) * np.exp(-0.04 * (t - s_arrival)), 0)
+    y_wave = np.where(t > s_arrival, 2.5 * np.sin(2 * np.pi * 1.1 * (t - s_arrival)) * np.exp(-0.05 * (t - s_arrival)), 0)
+
+    fig = go.Figure(data=[
+        go.Scatter3d(
+            x=x_wave, y=y_wave, z=z_wave,
+            mode='lines',
+            line=dict(color=t, colorscale='Viridis', width=4),
+            hovertext=[f"時間: {round(ti,2)}s" for ti in t],
+            hoverinfo="text"
+        )
+    ])
+    fig.update_layout(
+        template="plotly_dark",
+        title="🌀 【3D 互動】地表質點震動 3D 軌跡圖 (XYZ Phase Space Trajectory)",
+        scene=dict(
+            xaxis_title='X 軸 (E-W)',
+            yaxis_title='Y 軸 (N-S)',
+            zaxis_title='Z 軸 (Vert)',
+        ),
+        margin=dict(l=0, r=0, b=0, t=40),
+        height=320
+    )
+    return fig
 
 def quick_select_event(event_key):
     cfg = PRESET_EVENTS.get(event_key)
@@ -321,15 +381,16 @@ def quick_select_event(event_key):
 
     df_wave = generate_waveform_df()
 
-    # 3D 圖表生成
     fig_3d_hypo = generate_3d_hypocenter_plot(df_catalog, eq_lat, eq_lon, main_dep)
     fig_3d_geophy = generate_3d_geophy_plot(eq_lat, eq_lon)
+    fig_wave = generate_interactive_waveform_plot("全三軸 (XYZ) 疊加")
+    fig_3d_wave = generate_3d_waveform_trajectory()
 
     csv_content = df_catalog.to_csv(index=False, encoding="utf-8-sig")
     tmp_path = _save_tmp(csv_content, f"_{cfg['stdate']}_catalog.csv")
     info_str = f"✅ 已成功載入 **{cfg['title']}**！含目錄、2D/3D立體震源、波形觀測站與 3D 地球物理變形場資料。"
 
-    return card_html, df_catalog, info_str, tmp_path, map_html, df_stations, df_geophy, df_wave, fig_3d_hypo, fig_3d_geophy
+    return card_html, df_catalog, info_str, tmp_path, map_html, df_stations, df_geophy, fig_wave, fig_3d_hypo, fig_3d_geophy, fig_3d_wave
 
 
 # ── Gradio UI ──────────────────────────────────────────────────────────────
@@ -369,29 +430,43 @@ with gr.Blocks(
                 with gr.Column(scale=1):
                     plot_3d_geophy = gr.Plot(label="3D 地球物理 GNSS 變形場")
 
+            # 波形互動切換區域
+            gr.Markdown("### 🌊 2. 【地震波形視覺化與 XYZ 三軸互動切換】")
+            with gr.Row():
+                with gr.Column(scale=1):
+                    axis_selector = gr.Radio(
+                        choices=["全三軸 (XYZ) 疊加", "X 軸 (東西向 E-W)", "Y 軸 (南北向 N-S)", "Z 軸 (垂直向 Vert)"],
+                        value="全三軸 (XYZ) 疊加",
+                        label="選擇波形震動分量 (Component Selector)",
+                        interactive=True
+                    )
+                    wave_plot = gr.Plot(label="三軸動態解析訊號圖表")
+                with gr.Column(scale=1):
+                    wave_3d_plot = gr.Plot(label="3D 地表質點震動軌跡圖")
+
+            # 當使用者切換 XYZ 三軸時動態更新 Plot
+            axis_selector.change(
+                generate_interactive_waveform_plot,
+                inputs=[axis_selector],
+                outputs=[wave_plot]
+            )
+
             with gr.Row():
                 with gr.Column(scale=1):
                     map_output = gr.HTML(label="震央地圖")
                 with gr.Column(scale=1):
-                    wave_plot = gr.LinePlot(
-                        x="時間(秒)", y="垂直動振幅",
-                        title="🌊 近震央觀測站 (NACB) 即時波形訊號示意 (Z分量)",
-                        tooltip=["時間(秒)", "垂直動振幅"],
-                        height=280
-                    )
-
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown("### 📋 2. 地震目錄資料表 (Catalog)")
+                    gr.Markdown("### 📋 地震目錄資料表 (Catalog)")
                     quick_table = gr.DataFrame(label="地震目錄數據", interactive=False, wrap=True)
                     quick_file = gr.File(label="下載地震目錄 CSV 檔案")
-                
+
+            with gr.Row():
                 with gr.Column(scale=1):
                     gr.Markdown("### 📡 3. 近震央波形觀測站及離震距離 (Seismic Stations)")
                     stations_table = gr.DataFrame(label="觀測站清單與距離", interactive=False, wrap=True)
 
-            gr.Markdown("### 🛰️ 4. 地球物理資料全覽 (Geophysical Data: GNSS / 地下水 / 地磁)")
-            geophy_table = gr.DataFrame(label="地球物理資料狀態", interactive=False, wrap=True)
+                with gr.Column(scale=1):
+                    gr.Markdown("### 🛰️ 4. 地球物理資料全覽 (Geophysical Data: GNSS / 地下水 / 地磁)")
+                    geophy_table = gr.DataFrame(label="地球物理資料狀態", interactive=False, wrap=True)
 
             event_dropdown.change(
                 quick_select_event,
@@ -399,7 +474,7 @@ with gr.Blocks(
                 outputs=[
                     quick_card, quick_table, quick_info, quick_file,
                     map_output, stations_table, geophy_table, wave_plot,
-                    plot_3d_hypo, plot_3d_geophy
+                    plot_3d_hypo, plot_3d_geophy, wave_3d_plot
                 ]
             )
 
@@ -409,7 +484,7 @@ with gr.Blocks(
                 outputs=[
                     quick_card, quick_table, quick_info, quick_file,
                     map_output, stations_table, geophy_table, wave_plot,
-                    plot_3d_hypo, plot_3d_geophy
+                    plot_3d_hypo, plot_3d_geophy, wave_3d_plot
                 ]
             )
 
