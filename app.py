@@ -160,17 +160,32 @@ def quick_select_event(event_key):
     main_eq = max(data, key=lambda x: float(x.get("ML", 0)))
     count = len(df)
 
+    eq_date = main_eq.get('date', cfg['stdate'])
+    eq_time = main_eq.get('time', '08:00:00')
+    
     card_html = f"""
     <div style='background:linear-gradient(135deg, #1e3a5f, #0f172a); border:2px solid #0ea5e9; border-radius:12px; padding:1.2rem; margin-bottom:1rem;'>
         <h2 style='color:#38bdf8; margin:0 0 0.5rem 0;'>📌 {cfg['title']}</h2>
         <p style='color:#cbd5e1; margin-bottom:0.8rem;'>{cfg['desc']}</p>
-        <div style='display:flex; gap:1.5rem; flex-wrap:wrap; background:#0f172a; padding:0.8rem; border-radius:8px; border:1px solid #334155;'>
+        <div style='display:flex; gap:1.5rem; flex-wrap:wrap; background:#0f172a; padding:0.8rem; border-radius:8px; border:1px solid #334155; margin-bottom:1rem;'>
             <div><span style='color:#94a3b8;'>最大規模 ML：</span><strong style='color:#f59e0b; font-size:1.3rem;'>{main_eq.get('ML')}</strong></div>
-            <div><span style='color:#94a3b8;'>主震發生時間：</span><strong style='color:#38bdf8;'>{main_eq.get('date')} {main_eq.get('time')}</strong></div>
+            <div><span style='color:#94a3b8;'>主震發生時間：</span><strong style='color:#38bdf8;'>{eq_date} {eq_time}</strong></div>
             <div><span style='color:#94a3b8;'>震央座標：</span><strong>({main_eq.get('latitude')}°N, {main_eq.get('longitude')}°E)</strong></div>
             <div><span style='color:#94a3b8;'>震源深度：</span><strong>{main_eq.get('depth')} km</strong></div>
             <div><span style='color:#94a3b8;'>當天記錄總數：</span><strong style='color:#10b981;'>{count} 筆</strong></div>
             <div><span style='color:#94a3b8;'>資料品質：</span><strong style='color:#a855f7;'>Grade {main_eq.get('quality')}</strong></div>
+        </div>
+        
+        <div style='background:#1e293b; padding:1rem; border-radius:8px; border:1px solid #0ea5e9;'>
+            <h4 style='color:#38bdf8; margin:0 0 0.5rem 0;'>🌊 【地震波形與地球物理】即時下載說明與參數設定</h4>
+            <div style='font-size:0.9rem; color:#e2e8f0; line-height:1.6;'>
+                🔹 <strong>寬頻/強震波形網路：</strong> 建議選擇 <code>CWASN</code> (寬頻地震網) 或 <code>TSMIP</code> (強地動觀測網)<br>
+                🔹 <strong>地球物理觀測資料：</strong> 可下載 GNSS 連續 GPS 變形資料或水電位資料<br>
+                🔹 <strong>波形起算時間備註：</strong> CWASN 線上波形開放時間為 2012-01-01 起；TSMIP 為 2017-11-30 起。<br>
+                <div style='background:#0f172a; padding:0.6rem; margin-top:0.5rem; border-radius:6px; font-family:monospace; color:#f59e0b;'>
+                    建議下載時間設定：{eq_date} {eq_time[:5]} 前後 15 分鐘（例如：{eq_date} {eq_time} 往前推 2 分鐘，往後推 15 分鐘）
+                </div>
+            </div>
         </div>
     </div>
     """
@@ -178,7 +193,7 @@ def quick_select_event(event_key):
     csv_content = df.to_csv(index=False, encoding="utf-8-sig")
     tmp_path = _save_tmp(csv_content, f"_{cfg['stdate']}_catalog.csv")
 
-    info_str = f"✅ 已載入 **{cfg['title']}**！共發現 **{count} 筆**相關記錄。"
+    info_str = f"✅ 已載入 **{cfg['title']}**！含完整目錄、波形與地球物理資料參數。"
 
     return card_html, df, info_str, tmp_path
 
