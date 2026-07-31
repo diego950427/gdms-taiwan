@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: gdms-taiwan
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PORT
+        value: 7860
+      - key: PYTHONUNBUFFERED
+        value: "1"
